@@ -33,6 +33,12 @@ def main():
 
     client = Client(HOST, PORT)
 
+    answer = ''
+    while answer != serialize.end_of_stream:
+        print(answer)
+        answer = serialize.deserialize(client.sock.recv)
+
+
     cmd_text = input()
     while cmd_text != 'exit':
         client.send(cmd_text)

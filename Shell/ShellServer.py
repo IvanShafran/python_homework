@@ -3,11 +3,12 @@ __author__ = 'Ivan Shafran'
 import subprocess
 import logging
 import socketserver
-import hashlib
 import serialize
 
 
 class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
+    password_dict = dict()
+
     def send(self, text):
         self.request.sendall(serialize.serialize(text))
 
@@ -29,6 +30,46 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         logging.info("Got connection from %s.", self.client_address[0])
+
+        while True:
+            self.send("Please log in or register")
+            self.send("Choose 'Log in' or 'Register'")
+            self.send(serialize.end_of_stream)
+
+            msg = self.get()
+            if msg == 'Log in':
+                self.send("Enter login and password(in new line)")
+                self.send(serialize.end_of_stream)
+
+                login = self.get()
+                self.send(serialize.end_of_stream)
+                password = self.get()
+
+                if login in self.password_dict:
+                    if self.password_dict[login] == hash(password):
+                        self.send("You log in successfully")
+                        self.send(serialize.end_of_stream)
+                        break
+                    else:
+                        self.send("Wrong login or password")
+                else:
+                    self.send("User with this login doesn't exist")
+
+            elif msg == 'Register':
+                self.send("Enter login and password(in new line)")
+                self.send(serialize.end_of_stream)
+
+                login = self.get()
+                self.send(serialize.end_of_stream)
+                password = self.get()
+
+                if login not in self.password_dict:
+                    self.password_dict[login] = hash(password)
+                    self.send("You register and log in successfully")
+                    self.send(serialize.end_of_stream)
+                    break
+                else:
+                    self.send("User with this login already exists")
 
         while True:
             msg = self.get()
